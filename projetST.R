@@ -1,0 +1,171 @@
+#######        Amadou Mamoudou LY               ##########################
+####### Projet Serie Temporelle M1 SID 2019     ########################
+#######################################################################
+library(tseries)
+library(forecast)
+pt=read.table(file.choose() ,sep=";",header =TRUE)
+pt
+str(pt)
+dim(pt)
+head(pt)
+is.ts(pt)
+attach(pt)
+#verification est ce que c est une serie temporelle
+is.ts(Cas_deces)
+#Transformer a serie temporelle
+basee=ts(Cas_deces,start=c(2011,1),end=c(2017,12),frequency=12)
+is.ts(basee)
+#Ajustant sur tendance
+dp=decompose(basee,type ="add" )
+plot(dp)
+tendance=dp$trend
+plot(tendance)
+
+par(mfrow=c(1,2))
+plot(Cas_deces,type='l',
+     main="Distribution du cas_deces  Jan 2011 - Dec 2017",
+     ylab="cas_deces", xlab="Mois")
+
+plot(basee,type='l',
+     main="Distribution du cas_deces Jan 2011 - Dec 2017",
+     ylab="cas_deces", xlab="Annee")
+
+###########
+##########  méthodologie de Box & Jenkins
+#################
+
+adf.test(basee)
+# autocorrelation partielle (ordre de la partie AR)
+
+pacf(basee)
+# la commande auto.arima() renvoie le meilleur modele 
+# en comparant les AIC
+
+auto.arima(basee)
+
+model11=arima(basee, order=c(1,0,1), seasonal=c(0,1,1))
+summary(model11)
+
+
+
+residus=model11$resid
+##### validation du modele #####
+
+### test de nullite de la moyenne des residus
+# H0: la moyenne des residus est nulle
+# H1: la moyenne des residus est non nulle
+
+t.test(residus,mu=0,conf.level = 0.95)
+residus
+summary(residus)
+
+Box.test(residus,type="Ljung-Box")
+
+shapiro.test(residus)
+boxplot(residus)
+
+##### Prevision avec le modele ARIMA  #####
+
+prd1=predict(model11,n.ahead = 12)
+prd1
+prv1=prd1$pred 
+plot(basee,xlim=c(2011,2019),ylim=range(c(basee,prev)),
+     xlab='Annee',ylab='Cas deces',main='Prevision pour 2018',
+     lwd=2)
+lines(prv1,col="blue",lwd=2)
+
+##### Prevision avec le modele ARIMA  #####
+
+prd=predict(model11,n.ahead = 36)
+prd
+prev=prd$pred
+plot(basee,xlim=c(2011,2020),ylim=range(c(basee,prev)),
+    xlab='Annee',ylab='Cas deces',main='Prevision en 2018-2020',
+     lwd=2)
+lines(prev,col="blue",lwd=2)
+
+######Graphe Prevision#####
+indice=1:36
+plot(indice,prev, type='l', col='blue', lwd=2,
+     cex.axis=0.6, xaxt='n', xlab='Mois',
+     ylab='Cas deces', main='Prevision en 2018-2020 par ARIMA')
+axis(1,tck=T,cex.axis=.6)
+
+
+#        Lissage exponentiel                ##
+#############################################
+lis1=HoltWinters(basee)
+plot(lis1,main='lissage 1')
+# prevision par lissage
+prevlis=predict(lis1,n.ahead=36)
+prevlis
+
+plot(lis1, xlim=c(2011,2020), xlab='Annee',
+     ylab='Cas deces Prevision en 3 ans',lwd=2)
+lines(prevlis,col=3,lwd=2)
+
+# graphe des previsions
+
+plot(prevlis, type='l', col='blue', lwd=3,
+     cex.axis=0.6, xaxt='n', xlab='Annee',
+     ylab=' cas deces', main='Prevision en 3 ans par lissage')
+axis(1,tck=T,cex.axis=.6)
+
+
+#Validation Par Apprentissage
+
+base1=ts(Cas_deces,start=c(2011,1),end=c(2015,12),frequency=12)
+base1
+adf.test(base1)
+# autocorrelation partielle (ordre de la partie AR)
+
+pacf(base1)
+# la commande auto.arima() renvoie le meilleur modele 
+# en comparant les AIC
+
+auto.arima(base1)
+
+model111=arima(base1, order=c(1,0,1), seasonal=c(0,1,1))
+summary(model111)
+#Prevision Avec Arima
+prdb1=predict(model111,n.ahead = 24)
+prdb1
+
+prevb1=prdb1$pred
+plot(base1,xlim=c(2011,2017),ylim=range(c(base1,prevb1)),
+     xlab='Annee',ylab='Cas deces',main='Prevision 2016-2017',
+     lwd=2)
+lines(prevb1,col="blue",lwd=2)
+######Graphe Prevision 
+indice1=1:24
+plot(indice1,prevb1, type='l', col='blue', lwd=2,
+     cex.axis=0.6, xaxt='n', xlab='Mois',
+     ylab='Cas deces', main='Prevision en 2016-2017 par ARIMA')
+axis(1,tck=T,cex.axis=.6)
+
+
+
+#Prevision Avec Lissage Exponentielle
+lisb1=HoltWinters(base1)
+plot(lisb1,main='lissage Base1')
+# prevision par lissage
+prevlisb1=predict(lisb1,n.ahead=24)
+prevlisb1
+
+plot(lisb1, xlim=c(2011,2017), xlab='Annee',
+     ylab='Cas deces- Prevision en 2 ans',lwd=2)
+lines(prevlisb1,col=3,lwd=2)
+######Graphe Prevision 
+plot(prevlisb1, type='l', col='blue', lwd=3,
+     cex.axis=0.6, xaxt='n', xlab='Annee',
+     ylab=' cas deces', main='Prevision en 2 ans par lissage')
+axis(1,tck=T,cex.axis=.6)
+
+########### base2 #########
+base2=ts(Cas_deces,start=c(2016,1),end=c(2017,12),frequency=12)
+base2
+
+plot(base2,type='l',
+     main="Distribution du cas_deces Jan 2016 - 2017",
+     ylab="cas_deces", xlab="Annee")
+
